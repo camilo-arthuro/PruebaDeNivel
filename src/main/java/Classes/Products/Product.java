@@ -1,4 +1,4 @@
-package Classes;
+package Classes.Products;
 
 public class Product {
 
@@ -23,6 +23,6 @@ public class Product {
     }
 
     public String hamburgerGift(){
-        return " Cap receives the customer for the purchase";
+        return " Cap(s) receives the customer for the purchase";
     }
 }

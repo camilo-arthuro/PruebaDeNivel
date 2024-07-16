@@ -1,5 +1,8 @@
 package Classes;
 
+import Classes.Distributors.Distributor;
+import Classes.Products.Product;
+
 import java.util.ArrayList;
 
 public class Order {

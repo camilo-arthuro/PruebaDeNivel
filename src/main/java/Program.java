@@ -1,8 +1,10 @@
-import Classes.Client;
-import Classes.Distributor;
+import Classes.*;
+import Classes.Distributors.BicycleDistributor;
+import Classes.Distributors.Distributor;
+import Classes.Distributors.MotorcycleDistributor;
+import Classes.Distributors.WalkingDistributor;
 import Classes.Exceptions.NoDistributorAvailable;
-import Classes.Order;
-import Classes.Product;
+import Classes.Products.*;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -17,18 +19,20 @@ public class Program {
         boolean working = true;
         ArrayList<Order> orderList = new ArrayList<>();
         ArrayList<Order> ordersDelivered = new ArrayList<>();
+        ArrayList<Distributor> distributorList = distributorList();
 
         do {
             System.out.println("Welcome, how may I help you?");
-            System.out.println("1. Create new order\n " +
+            System.out.println(" 1. Create new order\n " +
                     "2. Mark order as delivered\n " +
                     "3. Pending orders\n " +
                     "4. Orders delivered\n " +
                     "0. Exit");
+            System.out.print("> ");
             option = input.nextInt();
             switch (option){
                 case 1 :
-                    createOrder(orderList);
+                    createOrder(orderList, distributorList);
                     break;
                 case 2 :
                     markAsDelivered(orderList, ordersDelivered);
@@ -50,25 +54,19 @@ public class Program {
 
     }
 
-    public static void createOrder(ArrayList<Order> orderList) throws NoDistributorAvailable {
-        ArrayList<Distributor> verifyDistributors = distributorList();
-        Client client = null;
-        Distributor distributor = null;
-        ArrayList<Product> productForClient = null;
-
-        if (verifyDistributors.isEmpty()){
-            throw new NoDistributorAvailable("No distributors available, please mark orders as delivered");
-        }else{
-            client = chooseClient();
-            distributor = assignDistributor();
-            productForClient = addProducts();
-
+    public static void createOrder(ArrayList<Order> orderList, ArrayList<Distributor> distributorList) {
+        try {
+            Distributor distributor = assignDistributor(distributorList);
+            Client client = chooseClient();
+            ArrayList<Product> productForClient = addProducts();
             Order order = new Order(client, distributor, productForClient);
+
             createTicket(order);
             giftMessage(order.getProductsList());
-            System.out.println("Order " + order.getOrderId() + " was created");
+            System.out.println("Order " + order.getOrderId() + " was created\n");
             orderList.add(order);
-            verifyDistributors.remove(distributor);
+        } catch (NoDistributorAvailable e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -77,45 +75,24 @@ public class Program {
         double totalPrice = 0d;
         double additional = 0d;
 
+        System.out.println("-----------------------------------------------");
+        System.out.println("Ticket number : " + order.getOrderId() + " \n" +
+                "Distributor assigned : " + order.getDistributor().getName() + " \n" +
+                "Product / Price");
         for (int i = 0; i < products.size(); i++) {
-            System.out.println("Product : " + products.get(i).getName() +
-                    ". Price : " + products.get(i).getPrice() + " €");
+            System.out.println(products.get(i).getName() + " " + products.get(i).getPrice() + " €");
             totalPrice += products.get(i).getPrice();
         }
         additional = additional(totalPrice,order.getDistributor());
 
-        System.out.println("Additional : " + additional +" €\n" +
+        System.out.println("\nAdditional : " + additional +" €\n" +
                 "Total price : " + (totalPrice + additional) + " €");
+        System.out.println("-----------------------------------------------");
     }
 
     public static double additional(double price, Distributor distributor){
-        double additional = 0d;
-        int option = 0;
-        boolean working = true;
 
-        do {
-            System.out.println("What do you need to deliver the order? \n " +
-                    "1. Bicycle\n " +
-                    "2. Motorcycle\n " +
-                    "3. Walk");
-            option = input.nextInt();
-            switch (option){
-                case 1 :
-                    additional = distributor.bicycleDelivery(price);
-                    working = false;
-                    break;
-                case 2 :
-                    additional = distributor.motorcycleDelivery(price);
-                    working = false;
-                    break;
-                case 3 :
-                    working = false;
-                    break;
-                default:
-                    System.out.println("invalid option, try again");
-            }
-        } while (working);
-        return additional;
+        return distributor.additional(price);
     }
 
     public static void giftMessage(ArrayList<Product> products){
@@ -141,7 +118,6 @@ public class Program {
 
     public static void markAsDelivered(ArrayList<Order> orderList, ArrayList<Order> ordersDelivered){
         int option = -1;
-        ArrayList<Distributor> addDistributor = distributorList();
         Distributor distributor = null;
         Order order = null;
 
@@ -152,7 +128,7 @@ public class Program {
         option = input.nextInt();
         order = orderList.get(option-1);
         distributor = order.getDistributor();
-        addDistributor.add(distributor);
+        distributor.setAvailability(true);
         ordersDelivered.add(order);
         orderList.remove(order);
 
@@ -183,25 +159,37 @@ public class Program {
         for (int i = 0; i < clientList.size(); i++) {
             System.out.println((i + 1) + ". " + clientList.get(i).getName());
         }
-        System.out.println("> " + (option = input.nextInt()));
+        System.out.print("> ");
+        option = input.nextInt();
         client = clientList.get(option-1);
 
         return client;
     }
 
-    public static Distributor assignDistributor(){
-        ArrayList<Distributor> distributorList = distributorList();
+    public static Distributor assignDistributor(ArrayList<Distributor> distributorList) throws NoDistributorAvailable {
+        ArrayList<Distributor> verification = new ArrayList<>();
         Random random = new Random();
-        int position = random.nextInt(distributorList.size());
+        int position = 0;
+        Distributor distributorAssigned = null;
 
-        Distributor distributor = distributorList.get(position);
-
-        return distributor;
+        for (Distributor distributor : distributorList) {
+            if (distributor.isAvailability()){
+                verification.add(distributor);
+            }
+        }
+        if (verification.isEmpty()) {
+            throw new NoDistributorAvailable("No distributors available, please mark orders as delivered");
+        } else {
+            position = random.nextInt(verification.size());
+            distributorAssigned = verification.get(position);
+            distributorAssigned.setAvailability(false);
+        }
+        return distributorAssigned;
     }
 
     public static ArrayList<Product> addProducts(){
         ArrayList<Product> productList = productList();
-        ArrayList<Product> products = null;
+        ArrayList<Product> products = new ArrayList<>();
         int option = -1;
         boolean working = true;
 
@@ -210,12 +198,13 @@ public class Program {
             for (int i = 0; i < productList.size(); i++) {
                 System.out.println((i + 1) + ". " + productList.get(i).getName());
             }
+            System.out.print("> ");
             option = input.nextInt();
 
             if (option == 0){
-                System.out.println("Good bye!");
+                System.out.println("Products added to the list!\n");
                 working = false;
-            } else if (option < 0 || option >= productList.size()){
+            } else if (option < 0 || option > productList.size()){
                 System.out.println("Invalid option, try again");
             } else {
                 products.add(productList.get(option-1));
@@ -229,9 +218,9 @@ public class Program {
     public static ArrayList<Distributor> distributorList(){
         ArrayList<Distributor> distributors = new ArrayList<>();
 
-        Distributor distributor1 = new Distributor("Pol");
-        Distributor distributor2 = new Distributor("Daniel");
-        Distributor distributor3 = new Distributor("David");
+        Distributor distributor1 = new BicycleDistributor("Pol");
+        Distributor distributor2 = new MotorcycleDistributor("Daniel");
+        Distributor distributor3 = new WalkingDistributor("David");
 
         distributors.add(distributor1);
         distributors.add(distributor2);
@@ -257,10 +246,10 @@ public class Program {
     public static ArrayList<Product> productList(){
         ArrayList<Product> products = new ArrayList<>();
 
-        Product burrito = new Product("Burrito", 6.5);
-        Product hamburger = new Product("Hamburger", 8.9);
-        Product kebab = new Product("Kebab", 4.5);
-        Product pizza = new Product("Pizza", 7.9);
+        Product burrito = new Burrito("Burrito", 6.5);
+        Product hamburger = new Hamburger("Hamburger", 8.9);
+        Product kebab = new Kebab("Kebab", 4.5);
+        Product pizza = new Pizza("Pizza", 7.9);
 
         products.add(burrito);
         products.add(hamburger);
