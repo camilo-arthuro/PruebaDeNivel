@@ -98,21 +98,25 @@ public class Program {
     public static void giftMessage(ArrayList<Product> products){
         int counterBurrito = 0;
         int counterHamburger = 0;
+        Burrito burrito = null;
+        Hamburger hamburger = null;
 
         for (int i = 0; i < products.size(); i++) {
             if (products.get(i).getName().equalsIgnoreCase("Burrito")){
                 counterBurrito++;
+                burrito = (Burrito) products.get(i);
             } else if (products.get(i).getName().equalsIgnoreCase("Hamburger")){
                 counterHamburger++;
+                hamburger = (Hamburger) products.get(i);
             }
         }
         if (counterBurrito > 0 && counterHamburger > 0){
-            System.out.println(counterBurrito + products.get(0).burritoGift());
-            System.out.println(counterHamburger + products.get(0).hamburgerGift());
+            System.out.println(counterBurrito + burrito.gift());
+            System.out.println(counterHamburger + hamburger.gift());
         } else if (counterBurrito > 0 && counterHamburger == 0) {
-            System.out.println(counterBurrito + products.get(0).burritoGift());
+            System.out.println(counterBurrito + burrito.gift());
         } else if (counterBurrito == 0 && counterHamburger > 0) {
-            System.out.println(counterHamburger + products.get(0).hamburgerGift());
+            System.out.println(counterHamburger + hamburger.gift());
         }
     }
 

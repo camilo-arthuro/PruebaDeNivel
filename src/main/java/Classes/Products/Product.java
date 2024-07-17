@@ -17,12 +17,4 @@ public class Product {
     public double getPrice() {
         return price;
     }
-
-    public String burritoGift(){
-        return " Pin(s) receives the customer for the purchase";
-    }
-
-    public String hamburgerGift(){
-        return " Cap(s) receives the customer for the purchase";
-    }
 }
